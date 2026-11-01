@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AC-4: the goal writes to ${project.build.directory}/generated-sources when outputDirectory is omitted.
+  maven-invoker-plugin runs this build with the plugin it has just packaged; verify.groovy checks the result.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>nl.onnoh.it</groupId>
+    <artifactId>ac4-default-output-directory</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>AC-4 outputDirectory default</name>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- Puts a source file where a generator would: the default outputDirectory. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>@maven-resources-plugin.version@</version>
+                <executions>
+                    <execution>
+                        <id>stage-generated-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/generated-sources</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/generated</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>@project.groupId@</groupId>
+                <artifactId>@project.artifactId@</artifactId>
+                <version>@project.version@</version>
+                <executions>
+                    <execution>
+                        <id>annotate</id>
+                        <goals>
+                            <goal>generate-annotations</goal>
+                        </goals>
+                        <configuration>
+                            <!-- outputDirectory is deliberately not configured: that is what AC-4 is about. -->
+                            <imports>
+                                <import>javax.annotation.processing.Generated</import>
+                            </imports>
+                            <annotations>
+                                <annotation>@Generated("annotation-maven-plugin")</annotation>
+                            </annotations>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

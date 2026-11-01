@@ -19,3 +19,21 @@ jobs:
         run: mvn -B verify
       - name: Build the release artifacts without signing them
         run: mvn -B -Prelease -Dgpg.skip verify
+      - name: 'AC-11: the release build produced the plugin, sources and javadoc jars'
+        run: |
+          set -euo pipefail
+          version=$(mvn -B -q help:evaluate -Dexpression=project.version -DforceStdout)
+          plugin="target/annotation-plugin-$version.jar"
+          sources="target/annotation-plugin-$version-sources.jar"
+          javadoc="target/annotation-plugin-$version-javadoc.jar"
+          for jar in "$plugin" "$sources" "$javadoc"; do
+            test -s "$jar" || { echo "::error::AC-11: $jar was not built"; exit 1; }
+          done
+          contains() {
+            jar tf "$1" | grep -qx "$2" || { echo "::error::AC-11: $1 does not contain $2"; exit 1; }
+          }
+          contains "$plugin" META-INF/maven/plugin.xml
+          contains "$plugin" nl/onnoh/annotation/maven/plugin/JavaFileAnnotationMojo.class
+          contains "$sources" nl/onnoh/annotation/maven/plugin/JavaFileAnnotationMojo.java
+          contains "$javadoc" index.html
+          echo "AC-11: $plugin, $sources and $javadoc are complete"

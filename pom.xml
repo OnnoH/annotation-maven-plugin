@@ -47,12 +47,15 @@
         <maven-plugin-annotations.version>3.15.1</maven-plugin-annotations.version>
         <!-- Test Dependencies -->
         <assertj.version>3.27.3</assertj.version>
+        <groovy.version>4.0.24</groovy.version>
         <junit.version>5.11.4</junit.version>
         <!-- Plugin Dependencies -->
         <central-publishing-maven-plugin.version>0.7.0</central-publishing-maven-plugin.version>
         <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
+        <maven-invoker-plugin.version>3.9.0</maven-invoker-plugin.version>
         <maven-javadoc-plugin.version>3.11.2</maven-javadoc-plugin.version>
         <maven-plugin-plugin.version>3.15.1</maven-plugin-plugin.version>
+        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
@@ -131,6 +134,39 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
+            </plugin>
+            <!--
+              The integration tests in src/it run the packaged plugin in a real Maven build, which is the only way
+              to check the parameter defaults Maven itself applies (AC-4). verify.groovy holds the assertions.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-invoker-plugin</artifactId>
+                <version>${maven-invoker-plugin.version}</version>
+                <configuration>
+                    <projectsDirectory>src/it</projectsDirectory>
+                    <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+                    <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
+                    <postBuildHookScript>verify</postBuildHookScript>
+                    <streamLogs>true</streamLogs>
+                </configuration>
+                <dependencies>
+                    <!-- The script engine for verify.groovy. -->
+                    <dependency>
+                        <groupId>org.apache.groovy</groupId>
+                        <artifactId>groovy</artifactId>
+                        <version>${groovy.version}</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>install</goal>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

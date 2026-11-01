@@ -56,12 +56,12 @@ class BuildContractTest {
     }
 
     /**
-     * The {@code @Parameter} annotation is not kept at runtime, so the default is read from the plugin descriptor
-     * that maven-plugin-plugin generates in {@code process-classes}, which is what Maven itself uses.
+     * The declared side of AC-4: the default that ends up in the plugin descriptor. That the default is also
+     * applied is checked by running the goal in a real Maven build, in {@code src/it/ac4-default-output-directory}.
      */
     @Test
     @Tag("AC-4")
-    @DisplayName("AC-4: outputDirectory defaults to the documented generated-sources directory")
+    @DisplayName("AC-4: the plugin descriptor declares the generated-sources default")
     void defaultsTheOutputDirectory() throws Exception {
         Path descriptor = BASE_DIR.resolve("target/classes/META-INF/maven/plugin.xml");
         assertThat(descriptor).as("the generated plugin descriptor").exists();
@@ -100,9 +100,13 @@ class BuildContractTest {
         assertThat(release).contains("MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}");
     }
 
+    /**
+     * The declared side of AC-11. That the jars are really built and complete is checked by the CI step
+     * "AC-11: the release build produced the plugin, sources and javadoc jars", which runs after the release build.
+     */
     @Test
     @Tag("AC-11")
-    @DisplayName("AC-11: the release profile attaches the sources and javadoc jars, and CI builds it unsigned")
+    @DisplayName("AC-11: the release profile and the CI gate for the Central artifacts are in place")
     void releaseProfileBuildsTheCentralArtifacts() throws Exception {
         List<String> releasePlugins = releaseProfilePluginArtifactIds();
 
@@ -111,7 +115,12 @@ class BuildContractTest {
                 "maven-javadoc-plugin",
                 "maven-gpg-plugin",
                 "central-publishing-maven-plugin");
-        assertThat(read(".github/workflows/ci.yml")).contains("run: mvn -B -Prelease -Dgpg.skip verify");
+
+        String ci = read(".github/workflows/ci.yml");
+        assertThat(ci).contains("run: mvn -B -Prelease -Dgpg.skip verify");
+        assertThat(ci).contains("AC-11: the release build produced the plugin, sources and javadoc jars");
+        assertThat(ci).contains("-sources.jar");
+        assertThat(ci).contains("-javadoc.jar");
     }
 
     private String read(String path) throws IOException {

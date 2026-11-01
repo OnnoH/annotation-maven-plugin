@@ -170,6 +170,24 @@ class JavaFileAnnotationMojoTest {
                 "}");
     }
 
+    @Tag("AC-3")
+    @DisplayName("AC-3: unset annotations alone do not throw")
+    @Test
+    void addsOnlyTheImportsWhenNoAnnotationsAreConfigured() throws Exception {
+        Path file = write("Order.java", "package nl.onnoh.generated;\n\npublic class Order {\n}\n");
+
+        run(mojo(sources.toFile(), IMPORTS, null));
+
+        assertThat(lines(file)).containsExactly(
+                "package nl.onnoh.generated;",
+                "",
+                "import com.fasterxml.jackson.annotation.JsonIgnoreProperties;",
+                "import com.fasterxml.jackson.annotation.JsonInclude;",
+                "",
+                "public class Order {",
+                "}");
+    }
+
     @Tag("AC-2")
     @DisplayName("AC-2: a missing directory is reported, not fatal")
     @Test
@@ -206,6 +224,30 @@ class JavaFileAnnotationMojoTest {
                     .hasCauseInstanceOf(IOException.class);
         } finally {
             assertThat(file.toFile().setReadable(true)).isTrue();
+        }
+    }
+
+    @Tag("AC-2")
+    @DisplayName("AC-2: a file that cannot be written fails the build with MojoExecutionException")
+    @Test
+    void failsWhenAFileCannotBeWritten() throws Exception {
+        Path file = write("Order.java", "package nl.onnoh.generated;\n\npublic class Order {\n}\n");
+        assertThat(file.toFile().setWritable(false)).isTrue();
+        assumeTrue(!Files.isWritable(file), "the test user can write the file regardless of its permissions");
+        JavaFileAnnotationMojo mojo = mojo(sources.toFile(), IMPORTS, ANNOTATIONS);
+
+        try {
+            assertThatThrownBy(mojo::execute)
+                    .isInstanceOf(MojoExecutionException.class)
+                    .hasMessageContaining("Failed to annotate")
+                    .hasCauseInstanceOf(IOException.class);
+            assertThat(lines(file)).containsExactly(
+                    "package nl.onnoh.generated;",
+                    "",
+                    "public class Order {",
+                    "}");
+        } finally {
+            assertThat(file.toFile().setWritable(true)).isTrue();
         }
     }
 
